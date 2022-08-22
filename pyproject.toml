@@ -1,0 +1,43 @@
+[project]
+name = "purr"
+version = "0.0.0"
+description = "A WIP batteries-included Python web framework."
+authors = []
+requires-python = ">=3.7"
+readme = "README.md"
+license = {text = "MIT"}
+
+[build-system]
+requires = ["pdm-pep517>=1.0.0"]
+build-backend = "pdm.pep517.api"
+
+[tool.pdm.dev-dependencies]
+format = [
+    "black",
+    "isort",
+]
+lint = [
+    "flake8",
+    "flake8-annotations",
+    "flake8-docstrings",
+    "pyright",
+]
+test = [
+    "pytest",
+]
+
+[tool.pdm.scripts]
+format = { shell = "black . && isort ." }
+lint = { shell = "pyright && flake8 ." }
+test = "pytest ."
+all = { composite = ["format", "lint", "test"] }
+
+[tool.black]
+line-length = 120
+
+[tool.isort]
+profile = "black"
+
+[tool.pyright]
+include = ["purr/**/*.py", "tests/**/*.py"]
+strict = ["purr/**/*.py", "tests/**/*.py"]

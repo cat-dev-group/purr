@@ -1,15 +1,15 @@
 from __future__ import annotations
 
 import asyncio
+import functools
 import inspect
 import re
-import functools
+from typing import Any, Callable, Optional, Pattern, Sequence, TypeVar
 
-from typing import Optional, Pattern, Sequence, Callable, Any
+from typing_extensions import ParamSpec  # Backwards compatibility
 
+from purr._types import ASGIApp, ASGIReceive, ASGIScope, ASGISend
 from purr.http.responses import HTTPResponse
-from purr._types import ASGIScope, ASGISend, ASGIReceive, ASGIApp
-
 
 METHODS = {
     "get",
@@ -98,6 +98,10 @@ class Route:
         return self.path == other.path and self.method == other.method
 
 
+T = TypeVar("T")
+P = ParamSpec("P")
+
+
 class Router:
     """Managed and dispatches routes for a purr application.
 
@@ -115,3 +119,32 @@ class Router:
     def __init__(self, app: ASGIApp, routes: Sequence[Route] = []):
         self.routes = {route.path_regex: route for route in routes}
         self.app = app
+
+    def register(self, path: str, handler: Callable[..., Any], method: str = "get"):
+        """Register a route.
+
+        Args:
+            path (str): The path for the route.
+            handler (Callable[[Any], Any]): The handler for the route.
+            method (str, optional): The route's HTTP method. Defaults to "get".
+        """
+
+        route = Route(path, handler, method)
+        self.routes[route.path_regex] = route
+
+    def route(self, path: str, method: str = "get") -> Callable[..., Any]:
+        """A decorator for registering new routes.
+
+        Args:
+            path (str): The path for the route.
+            method (str, optional): The route's HTTP method. Defaults to "get"
+
+        Returns:
+            Callable[P, T]: A decorator.
+        """
+
+        def decorator(func: Callable[P, T]) -> Callable[P, T]:
+            self.register(path, func, method)
+            return func
+
+        return decorator

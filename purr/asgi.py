@@ -1,4 +1,4 @@
-from purr._types import ASGIScope, ASGIReceive, ASGISend
+from purr._types import ASGIReceive, ASGIScope, ASGISend
 
 
 class Purr:

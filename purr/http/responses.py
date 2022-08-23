@@ -2,8 +2,8 @@ from __future__ import annotations
 
 from typing import Optional
 
+from purr._types import ASGIReceive, ASGIScope, ASGISend
 from purr.http.headers import Headers
-from purr._types import ASGIScope, ASGIReceive, ASGISend
 
 
 class HTTPResponse:

@@ -112,6 +112,15 @@ class Headers:
 
         return values
 
+    def raw(self) -> list[tuple[bytes, bytes]]:
+        """Return a list of raw header key/value pairs.
+
+        Returns:
+            list[tuple[bytes, bytes]]: A list of tuples containing the key/value header pairs.
+        """
+
+        return [(k.encode("latin-1"), v.encode("latin-1")) for k, v in self._list]
+
     def __contains__(self, key: str) -> bool:
         return any(k.lower() == key.lower() for k, _ in self._list)
 

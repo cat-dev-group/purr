@@ -3,6 +3,7 @@ from __future__ import annotations
 from typing import Optional
 
 from purr.http.headers import Headers
+from purr._types import ASGIScope, ASGIReceive, ASGISend
 
 
 class HTTPResponse:
@@ -10,6 +11,17 @@ class HTTPResponse:
 
     Provides common functionality between the other HTTP
     response classes.
+
+    Args:
+        body: The body of the response. Defaults to None.
+        status_code: The status code of the response. Defaults to 200.
+        headers: The response headers. Defaults to None.
+        content_type: The content type of the response. Defaults to None.
+
+    Attributes:
+        body: The body of the response.
+        status_code: The status code of the response.
+        headers: The response headers.
     """
 
     content_type: Optional[str] = None
@@ -31,3 +43,8 @@ class HTTPResponse:
 
         if content_type is not None:
             self.headers["content_type"] = content_type
+
+    async def __call__(self, scope: ASGIScope, receive: ASGIReceive, send: ASGISend):
+        await send({"type": "http.response.start", "status": self.status_code, "headers": self.headers.raw()})
+
+        await send({"type": "http.response.body", "body": self.body})

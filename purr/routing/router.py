@@ -8,7 +8,7 @@ import functools
 from typing import Optional, Pattern, Sequence, Callable, Any
 
 from purr.http.responses import HTTPResponse
-from purr._types import ASGIScope, ASGISend, ASGIReceive
+from purr._types import ASGIScope, ASGISend, ASGIReceive, ASGIApp
 
 
 METHODS = {
@@ -96,3 +96,22 @@ class Route:
             return False
 
         return self.path == other.path and self.method == other.method
+
+
+class Router:
+    """Managed and dispatches routes for a purr application.
+
+    Wraps an ASGI app and dispatches routes to their corresponding handlers.
+
+    Args:
+        app: An ASGI application.
+        routes: A sequence of routes to create the Router with.
+
+    Attributes:
+        routes: The router's dictionary of routes.
+        app: An ASGI application.
+    """
+
+    def __init__(self, app: ASGIApp, routes: Sequence[Route] = []):
+        self.routes = {route.path_regex: route for route in routes}
+        self.app = app

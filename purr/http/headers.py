@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import MutableMapping, Any, Generator
+from typing import MutableMapping, Any, Generator, Optional
 
 
 class Headers:
@@ -77,6 +77,40 @@ class Headers:
             Generator[tuple[str, str], None, None]: A tuple containing a key/value pair.
         """
         yield from self
+
+    def get(self, key: str, default: Optional[Any] = None) -> str | None:
+        """Lookup a key, and in the event it doesn't exist, return the default.
+
+        Args:
+            key (str): The key to look up.
+            default (Optional[str], optional): The default value to return. Defaults to None.
+
+        Returns:
+            str: The value corresponding to the key or the default.
+        """
+        try:
+            return self[key]
+        except KeyError:
+            return default
+
+    def getlist(self, key: str) -> list[str]:
+        """Return a list of values for a given key
+
+        Args:
+            key (str): The key to look up.
+
+        Returns:
+            list[str]: A list consisting of the values for the
+            looked up key. Empty if key doesn't exist.
+        """
+
+        values: list[str] = []
+
+        for k, v in self._list:
+            if k.lower() == key.lower():
+                values.append(v)
+
+        return values
 
     def __contains__(self, key: str) -> bool:
         return any(k.lower() == key.lower() for k, _ in self._list)

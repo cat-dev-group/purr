@@ -44,7 +44,7 @@ class HTTPResponse:
         if content_type is not None:
             self.headers["Content-Type"] = content_type
 
-    async def __call__(self, scope: ASGIScope, receive: ASGIReceive, send: ASGISend):
+    async def __call__(self, _scope: ASGIScope, _receive: ASGIReceive, send: ASGISend):
         await send({"type": "http.response.start", "status": self.status_code, "headers": self.headers.raw()})
 
         await send({"type": "http.response.body", "body": self.body})

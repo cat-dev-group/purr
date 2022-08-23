@@ -6,6 +6,9 @@ authors = []
 requires-python = ">=3.7"
 readme = "README.md"
 license = {text = "MIT"}
+dependencies = [
+]
+[project.optional-dependencies]
 
 [build-system]
 requires = ["pdm-pep517>=1.0.0"]
@@ -24,6 +27,8 @@ lint = [
 ]
 test = [
     "pytest",
+]
+linting = [
 ]
 
 [tool.pdm.scripts]

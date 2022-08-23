@@ -32,7 +32,7 @@ class Headers:
         Returns:
             str: The first value found for the key.
 
-        Raises:
+        Raises: 
             KeyError: The given key was not found.
         """
 

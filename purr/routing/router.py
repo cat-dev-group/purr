@@ -91,5 +91,8 @@ class Route:
             path, self.path_params, method
         )  # Compiled regex which matches the route's path.
 
-    def __eq__(self, other: Route) -> bool:
+    def __eq__(self, other: Any) -> bool:
+        if not isinstance(other, Route):
+            return False
+
         return self.path == other.path and self.method == other.method

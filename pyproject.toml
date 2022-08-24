@@ -32,6 +32,9 @@ test = [
 ]
 linting = [
 ]
+repl = [
+    "ipython>=7.34.0",
+]
 
 [tool.pdm.scripts]
 format = { shell = "black . && isort ." }

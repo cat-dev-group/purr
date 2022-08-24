@@ -1,12 +1,12 @@
 from __future__ import annotations
 
-import asyncio
-import functools
 import inspect
 import re
-from typing import Any, Callable, Optional, Pattern, Sequence, TypeVar
+from typing import Any, Callable, Pattern, Sequence, TypeVar
+from urllib.parse import parse_qs
 
 from typing_extensions import ParamSpec  # Backwards compatibility
+from pydantic import ValidationError, parse_obj_as, create_model
 
 from purr._types import ASGIApp, ASGIReceive, ASGIScope, ASGISend
 from purr.http.responses import HTTPResponse
@@ -67,6 +67,35 @@ def compile_path_regex(path: str, path_params: list[str], method: str) -> Patter
     return re.compile(pattern)
 
 
+def parse_params(
+    query_params: dict[str, str], path_params: dict[str, str], types: dict[str, str]
+) -> tuple[dict[str, Any], dict[str, Any]]:
+    """Parses query and path parameters to their corresponding types.
+
+    Args:
+        query_params (dict[str, str]): A dictionary containing query parameters and their values.
+        path_params (dict[str, str]): A dictionary containing path parameters and their values.
+        types (dict[str, str]): A dictionary containing the types to cast the query and path parameters to.
+
+    Returns:
+        tuple[dict[str, Any], dict[str, Any]]: A tuple of two dicts which contains the parsed query
+        and path parameters.
+
+    Raises:
+        ValidationError: Raises pydantic's ValidationError upon encountering an invalid value which
+        cannot be parsed.
+    """
+
+    # Parses the parameters using a dictionary comprehension. `k` is the current
+    # key in the original parameters dictionary, and `v` is the value to be casted.
+    # The function fetches a type from `types` corresponding to the current key,
+    # and if there isn't one, uses Any for casting, which effectively doesn't cast
+    parsed_q = {k: parse_obj_as(create_model(types.get(k) or "Any"), v) for k, v in query_params.items()}
+    parsed_p = {k: parse_obj_as(create_model(types.get(k) or "Any"), v) for k, v in path_params.items()}
+
+    return parsed_q, parsed_p
+
+
 class Route:
     """Represents a route.
 
@@ -120,7 +149,7 @@ class Router:
         self.routes = {route.path_regex: route for route in routes}
         self.app = app
 
-    def register(self, path: str, handler: Callable[..., Any], method: str = "get"):
+    def register(self, path: str, handler: Callable[..., Any], method: str = "get") -> None:
         """Register a route.
 
         Args:
@@ -148,3 +177,48 @@ class Router:
             return func
 
         return decorator
+
+    async def __call__(self, scope: ASGIScope, receive: ASGIReceive, send: ASGISend) -> None:
+        if scope["type"] not in ("http", "websocket"):
+            # If request type isn't HTTP or websocket, return an error.
+            response = HTTPResponse(f"Invalid request type {scope['type']}", status_code=400)
+            await response(scope, receive, send)
+            return
+
+        if "router" not in scope:
+            scope["router"] = self
+
+        for pattern, route in self.routes.items():
+            match = pattern.match(scope["path"])
+            if match:
+                if scope["method"].lower() != route.method:
+                    response = HTTPResponse("Method not allowed", status_code=405)
+                    await response(scope, receive, send)
+                    return
+
+                path_params: dict[str, str] = match.groupdict()
+                query_params: dict[str, str] = {k.decode(): v[0] for k, v in parse_qs(scope["query_string"]).items()}
+
+                # Try to parse parameters if types are annotated.
+                if route.handler.__annotations__:
+                    try:
+                        handler_annotations = {k: str(v) for k, v in route.handler.__annotations__}
+                        query_params, path_params = parse_params(query_params, path_params, handler_annotations)
+                    except ValidationError as e:
+                        # If the type conversion failed, return an error
+                        response = HTTPResponse(
+                            f"Bad request, failed to parse parameters: {e.errors()[0]['msg']}", status_code=400
+                        )
+                        await response(scope, receive, send)
+                        return
+
+                try:
+                    response = await route.handler(*path_params.values(), **query_params)
+                except ValidationError as e:
+                    response = HTTPResponse("Missing required query parameters", status_code=422)
+
+                await response(scope, receive, send)
+                return
+
+        response = HTTPResponse("URL not found", status_code=404)
+        await response(scope, receive, send)

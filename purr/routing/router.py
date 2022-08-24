@@ -5,8 +5,8 @@ import re
 from typing import Any, Callable, Pattern, Sequence, TypeVar
 from urllib.parse import parse_qs
 
+from pydantic import ValidationError, create_model, parse_obj_as
 from typing_extensions import ParamSpec  # Backwards compatibility
-from pydantic import ValidationError, parse_obj_as, create_model
 
 from purr._types import ASGIApp, ASGIReceive, ASGIScope, ASGISend
 from purr.http.responses import HTTPResponse
@@ -145,7 +145,9 @@ class Router:
         app: An ASGI application.
     """
 
-    def __init__(self, app: ASGIApp, routes: Sequence[Route] = []):
+    def __init__(self, app: ASGIApp, routes: Sequence[Route] | None = None):
+        if routes is None:
+            routes = []
         self.routes = {route.path_regex: route for route in routes}
         self.app = app
 

@@ -103,7 +103,7 @@ class Route:
     handler.
     """
 
-    def __init__(self, path: str, handler: Callable[[Any], Any], method: str = "get"):
+    def __init__(self, path: str, handler: Callable[..., Any], method: str = "get"):
         if not inspect.iscoroutinefunction(handler):
             raise AttributeError("Handler must be an asynchronous function")
 

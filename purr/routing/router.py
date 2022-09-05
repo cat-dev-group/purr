@@ -89,7 +89,7 @@ def parse_params(
     # Parses the parameters using a dictionary comprehension. `k` is the current
     # key in the original parameters dictionary, and `v` is the value to be casted.
     # The function fetches a type from `types` corresponding to the current key,
-    # and if there isn't one, uses Any for casting, which effectively doesn't cast
+    # and if there isn't one, uses Any for casting, which effectively doesn't cast.
     parsed_q = {k: parse_obj_as(create_model(types.get(k) or "Any"), v) for k, v in query_params.items()}
     parsed_p = {k: parse_obj_as(create_model(types.get(k) or "Any"), v) for k, v in path_params.items()}
 
